@@ -1,0 +1,34 @@
+[tool.poetry]
+name = "sxm-tmk"
+version = "0.1.0"
+description = "One tool to rule your envs, one tool to find your requirements and in the brightness bind them all."
+authors = ["Jean-Sébastien Dieu <jdieu@salsify.com>"]
+
+packages = [
+    { include = "sxm_tmk" }
+]
+
+exclude = ["sxm_tmk/tests"]
+
+[[tool.poetry.source]]
+name = "alkemics"
+url = "https://pypi.alkemics.com:8443/simple"
+
+
+[tool.poetry.dependencies]
+python = "^3.8"
+ujson = "^5.5.0"
+types-PyYAML = "^6.0.11"
+filelock = "^3.8.0"
+alk-ci = "^1.1.44"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.1.3"
+mock = "^4.0.3"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
