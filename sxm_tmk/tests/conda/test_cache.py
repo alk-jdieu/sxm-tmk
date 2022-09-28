@@ -9,6 +9,63 @@ import ujson
 from sxm_tmk.core.conda.cache import CondaCache
 
 
+@mock.patch("sxm_tmk.core.conda.file_lock_wrapper.create_lock_file")
+def test_ensure_condacache_do_not_lock_upon_init(create_lock_file_mock, tmp_path):
+    create_lock_file_mock.return_value = mock.MagicMock()
+    CondaCache(tmp_path)
+    create_lock_file_mock.return_value.acquire.assert_not_called()
+    create_lock_file_mock.return_value.release.assert_not_called()
+
+
+@mock.patch("sxm_tmk.core.conda.file_lock_wrapper.create_lock_file")
+def test_ensure_locked_call_for_method_contains(create_lock_file_mock, tmp_path):
+    create_lock_file_mock.return_value = mock.MagicMock()
+    a_cache: CondaCache = CondaCache(tmp_path)
+    _ = "something" in a_cache
+    create_lock_file_mock.return_value.acquire.assert_called_once()
+    create_lock_file_mock.return_value.release.assert_called_once()
+
+    create_lock_file_mock.return_value = mock.MagicMock()
+    a_cache: CondaCache = CondaCache(tmp_path)
+    _ = "something" not in a_cache
+    create_lock_file_mock.return_value.acquire.assert_called_once()
+    create_lock_file_mock.return_value.release.assert_called_once()
+
+
+@mock.patch("sxm_tmk.core.conda.file_lock_wrapper.create_lock_file")
+def test_ensure_locked_call_for_method_store(create_lock_file_mock, tmp_path):
+    create_lock_file_mock.return_value = mock.MagicMock()
+    CondaCache(tmp_path).store(
+        "something",
+        ujson.dumps(
+            {
+                "stuff": {
+                    "pkg_name": "something",
+                    "version": "1.0.0",
+                },
+            }
+        ),
+    )
+    create_lock_file_mock.return_value.acquire.assert_called_once()
+    create_lock_file_mock.return_value.release.assert_called_once()
+
+
+@mock.patch("sxm_tmk.core.conda.file_lock_wrapper.create_lock_file")
+def test_ensure_locked_call_for_method_clean(create_lock_file_mock, tmp_path):
+    create_lock_file_mock.return_value = mock.MagicMock()
+    CondaCache(tmp_path).clean()
+    create_lock_file_mock.return_value.acquire.assert_called_once()
+    create_lock_file_mock.return_value.release.assert_called_once()
+
+
+@mock.patch("sxm_tmk.core.conda.file_lock_wrapper.create_lock_file")
+def test_ensure_locked_call_for_method_get(create_lock_file_mock, tmp_path):
+    create_lock_file_mock.return_value = mock.MagicMock()
+    CondaCache(tmp_path).get("something")
+    create_lock_file_mock.return_value.acquire.assert_called_once()
+    create_lock_file_mock.return_value.release.assert_called_once()
+
+
 def test_cache(tmp_path):
     a_cache: CondaCache = CondaCache(tmp_path)
     assert "something" not in a_cache
@@ -60,17 +117,17 @@ from sxm_tmk.core.conda.cache import CondaCache
 
 if __name__ == "__main__":
     cache = CondaCache(pathlib.Path("{tmp_path.as_posix()}"))
-    with cache:
-        cache.store("something", ujson.dumps(dict(stuff=dict(pkg_name="something", version="1.0.0"))))
+    cache.store("something", ujson.dumps(dict(stuff=dict(pkg_name="something", version="1.0.0"))))
     sys.exit(0)
         """
         )
-    with a_cache:
-        process = subprocess.Popen(["python", a_temp_file])
-        assert "something" not in a_cache
-        with pytest.raises(subprocess.TimeoutExpired):
-            process.communicate(timeout=1)
-        now = datetime.datetime.now().timestamp()
+    a_cache.acquire(-1)
+    process = subprocess.Popen(["python", a_temp_file])
+    assert "something" not in a_cache
+    with pytest.raises(subprocess.TimeoutExpired):
+        process.communicate(timeout=1)
+    now = datetime.datetime.now().timestamp()
+    a_cache.release()
     process.communicate(timeout=1)
     assert process.returncode == 0
     assert "something" in a_cache

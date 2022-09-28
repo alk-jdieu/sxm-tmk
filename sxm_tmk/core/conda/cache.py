@@ -3,7 +3,11 @@ import pathlib
 from typing import Optional
 
 import ujson
-from filelock import FileLock
+
+from sxm_tmk.core.conda.file_lock_wrapper import (
+    LockMixin,
+    ensure_lock_on_public_interface_call,
+)
 
 CACHE_DIR: pathlib.Path = pathlib.Path.home() / ".sxm_tmk" / "conda_query_cache"
 
@@ -13,20 +17,15 @@ def compute_expiry_time() -> float:
     return now.timestamp()
 
 
-class CondaCache:
+@ensure_lock_on_public_interface_call()
+class CondaCache(LockMixin):
     def __init__(self, cache_dir: Optional[pathlib.Path] = None):
-        self.__cache_dir = cache_dir or CACHE_DIR
+        self.__cache_dir: pathlib.Path = cache_dir or CACHE_DIR
         if not self.__cache_dir.exists():
             self.__cache_dir.mkdir(parents=True, exist_ok=True)
-        lock_file = self.__cache_dir / "tmk.lock"
-        lock_file.touch(exist_ok=True)
-        self.__lock = FileLock(lock_file.as_posix())
-
-    def __enter__(self):
-        self.__lock.acquire(timeout=-1)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.__lock.release()
+        lock_file_path: pathlib.Path = self.__cache_dir / "tmk.lock"
+        lock_file_path.touch(exist_ok=True)
+        super().__init__(lock_file_path)
 
     def clean(self):
         xpire_time = compute_expiry_time()
@@ -34,6 +33,7 @@ class CondaCache:
         for pkg_file_query in self.__cache_dir.iterdir():
             if delete_file is not None:
                 delete_file.unlink()
+                delete_file = None
             if pkg_file_query.suffix == ".json":
                 data = ujson.loads(pkg_file_query.read_text())
                 try:
@@ -54,6 +54,9 @@ class CondaCache:
 
     def __contains__(self, item):
         return (self.__cache_dir / f"{item}.json").exists()
+
+    def __getitem__(self, item):
+        return self.get(item)
 
     def get(self, item):
         item_path: pathlib.Path = self.__cache_dir / f"{item}.json"
