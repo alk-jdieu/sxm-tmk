@@ -1,5 +1,6 @@
 import datetime
 import subprocess
+import sys
 import tempfile
 
 import mock.mock
@@ -119,10 +120,10 @@ if __name__ == "__main__":
     cache = CondaCache(pathlib.Path("{tmp_path.as_posix()}"))
     cache.store("something", ujson.dumps(dict(stuff=dict(pkg_name="something", version="1.0.0"))))
     sys.exit(0)
-        """
+"""
         )
     a_cache.acquire(-1)
-    process = subprocess.Popen(["python", a_temp_file])
+    process = subprocess.Popen([sys.executable, a_temp_file])
     assert "something" not in a_cache
     with pytest.raises(subprocess.TimeoutExpired):
         process.communicate(timeout=1)
