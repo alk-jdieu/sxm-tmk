@@ -6,7 +6,7 @@ from typing import Callable, Dict
 import ujson as json
 
 from sxm_tmk.core.dependency import Dependency
-from sxm_tmk.core.models import DictOfDeps, InstallMode
+from sxm_tmk.core.models import DictOfDeps, InstallMode, ListOfDeps
 
 
 class LockFile:
@@ -33,12 +33,9 @@ class LockFile:
     def mode(self, mode: InstallMode):
         self.__mode = mode
 
-    def collect_dependencies(self) -> DictOfDeps:
-        deps: DictOfDeps = {}
+    def collect_dependencies(self) -> ListOfDeps:
         self.__pkg_filter = self.__filters[LockFile.PackageTypes.EXCLUDE_EDITABLES]
-        for dep, version in self:
-            deps[dep] = Dependency(pkg=dep, version=version)
-        return deps
+        return list({Dependency(pkg=name, version=version) for name, version in self})
 
     def __iter__(self):
         modes = [InstallMode.DEFAULT] if self.__mode != InstallMode.DEV else [InstallMode.DEFAULT, InstallMode.DEV]

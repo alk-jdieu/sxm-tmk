@@ -45,6 +45,9 @@ class Dependency:
     def version_tuple(self) -> VersionType:
         return tuple(self.version.split("."))
 
+    def __hash__(self):
+        return hash(f"{self.pkg}-{self.version}")
+
     def __str__(self):
         return f"{self.pkg}-{self.version}"
 
