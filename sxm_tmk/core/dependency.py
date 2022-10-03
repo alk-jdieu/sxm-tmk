@@ -1,98 +1,80 @@
-import operator
-from dataclasses import dataclass, field
-from typing import Iterable, List, Protocol, Tuple, Union
+from dataclasses import dataclass
+from typing import Optional
 
-VersionType = Tuple[Union[int, str], ...]
-
-
-class ConstraintValidator(Protocol):
-    def __call__(self, left: VersionType, right: VersionType) -> bool:
-        pass
+from packaging.specifiers import Specifier, SpecifierSet
+from packaging.version import parse
 
 
-def constraint_eq(left: VersionType, right: VersionType) -> bool:
-    return operator.eq(left, right)
+class InvalidVersion(Exception):
+    def __init__(self, version):
+        super().__init__(f'Version "{version}" is invalid.')
 
 
-def constraint_gt(left: VersionType, right: VersionType) -> bool:
-    return operator.gt(left, right)
+class BrokenVersionSpecifier(Exception):
+    def __init__(self, version, specifier):
+        super().__init__(f'Broken specifier: version "{version}" does not fulfil specifier "{specifier}" contract.')
 
 
-def constraint_ge(left: VersionType, right: VersionType) -> bool:
-    return operator.ge(left, right)
+@dataclass(unsafe_hash=True)
+class Package:
+    """
+    Basic representation of a requirement. Holds the requirement name.
+    """
 
-
-def constraint_le(left: VersionType, right: VersionType) -> bool:
-    return operator.le(left, right)
-
-
-def constraint_lt(left: VersionType, right: VersionType) -> bool:
-    return operator.lt(left, right)
-
-
-@dataclass
-class Dependency:
-    pkg: str
-    version: str
-
-    def __post_init__(self):
-        if any((self.version.startswith("=="), self.version.startswith(">="), self.version.startswith("<="))):
-            self.version = self.version[2:]
-        elif self.version.startswith(">") or self.version.startswith("<"):
-            self.version = self.version[1:]
-
-    @property
-    def version_tuple(self) -> VersionType:
-        return tuple(self.version.split("."))
-
-    def __hash__(self):
-        return hash(f"{self.pkg}-{self.version}")
+    name: str
+    version: Optional[str]
 
     def __str__(self):
-        return f"{self.pkg}-{self.version}"
-
-    def __eq__(self, other):
-        if isinstance(other, Dependency):
-            return str(self) == str(other)
-        raise NotImplementedError()
+        if self.version:
+            return f"{self.name}-{self.version} {self.specifier}"
+        return f"{self.name} {self.specifier}"
 
 
-@dataclass
-class Constraint:
-    version: str
-    validator: ConstraintValidator = field(default=constraint_eq)
+@dataclass(unsafe_hash=True)
+class PinnedPackage(Package):
+    """
+    A requirement specification, including also the version specifiers.
+    """
+
+    specifier: Specifier
 
     def __post_init__(self):
-        if self.version.startswith("=="):
-            self.version = self.version[2:]
-        if self.version.startswith(">="):
-            self.version = self.version[2:]
-            self.validator = constraint_ge
-        if self.version.startswith("<="):
-            self.version = self.version[2:]
-            self.validator = constraint_le
-        if self.version.startswith(">"):
-            self.version = self.version[1:]
-            self.validator = constraint_gt
-        if self.version.startswith("<"):
-            self.version = self.version[1:]
-            self.validator = constraint_lt
+        if self.version:
+            version = parse(self.version)
+            if version not in self.specifier:
+                raise BrokenVersionSpecifier(self.version, str(self.specifier))
 
-    def match(self, dependency: Dependency) -> bool:
-        return self.validator(dependency.version_tuple, self.version_tuple)
+    def __str__(self):
+        if self.version:
+            return f"{self.name}-{self.version} {self.specifier}"
+        return f"{self.name} {self.specifier}"
+
+    @classmethod
+    def make(cls, name: str, version: str, specifier: str):
+        return cls(name=name, version=version, specifier=Specifier(specifier))
+
+    @classmethod
+    def make_from_specifier(cls, name: str, specifier: str):
+        spec = Specifier(specifier)
+        return cls(name=name, version=spec.version, specifier=spec)
+
+
+class Constraint:
+    """
+    A global constraint that can be used to ensure a Package is in the valid format or to solve a dependency given
+    some conditions.
+    """
+
+    def __init__(self, pkg_name: str, constraint_description: str):
+        self.__pkg_name: str = pkg_name
+        self.__constraint_specifications = SpecifierSet(constraint_description.split(" ")[0])
 
     @property
-    def version_tuple(self):
-        return tuple(self.version.split("."))
+    def pkg_name(self) -> str:
+        return self.__pkg_name
 
-
-@dataclass
-class DependencyChecker:
-    reference_pkg: str
-    checker: Constraint
-
-    def match(self, proposal: Dependency) -> bool:
-        return self.reference_pkg == proposal.pkg and self.checker.match(proposal)
-
-    def filter_matching_propositions(self, proposals: List[Dependency]) -> Iterable[Dependency]:
-        return filter(lambda dep: self.reference_pkg == dep.pkg and self.checker.match(dep), proposals)
+    def ensure(self, pkg: Package) -> bool:
+        if pkg.version:
+            return pkg.version in self.__constraint_specifications and self.__pkg_name == pkg.name
+        else:
+            return False

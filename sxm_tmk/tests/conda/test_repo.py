@@ -3,7 +3,7 @@ import ujson
 
 from sxm_tmk.core.conda.cache import CondaCache
 from sxm_tmk.core.conda.repo import QueryPlan, SearchStatus
-from sxm_tmk.core.dependency import Dependency
+from sxm_tmk.core.dependency import Package
 
 
 def search_mamba_for_replacement(dep: str, cache: CondaCache):
@@ -31,12 +31,12 @@ def test_query_plan_search_result(tmp_path):
         "sxm_tmk.core.conda.repo.search_mamba_for", side_effect=search_mamba_for_replacement
     ) as search_mock:
 
-        all_deps_to_search = [
-            Dependency("numpy", "==1.2.3"),
-            Dependency("pytest", "==4.5.6"),
-            Dependency("thingy", "==1.0.0"),
+        all_pkgs_to_search = [
+            Package("numpy", "1.2.3"),
+            Package("pytest", "4.5.6"),
+            Package("thingy", "1.0.0"),
         ]
-        q.search_and_mark(all_deps_to_search)
+        q.search_and_mark(all_pkgs_to_search)
     assert search_mock.call_count == 3
 
     assert q.stats == {"not_found": ["thingy"], "found": ["numpy", "pytest"]}

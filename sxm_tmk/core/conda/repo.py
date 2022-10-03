@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 import ujson
 
 from sxm_tmk.core.conda.cache import CondaCache
-from sxm_tmk.core.models import ListOfDeps
+from sxm_tmk.core.types import Packages
 
 
 class SearchStatus(enum.Enum):
@@ -41,11 +41,11 @@ class QueryPlan:
     def _aggregate_results(self, search_result: SearchStatus, pkg: str):
         self.__stats[str(search_result.value)].append(pkg)
 
-    def search_and_mark(self, deps: ListOfDeps):
+    def search_and_mark(self, packages: Packages):
         futures = []
         with ThreadPoolExecutor(max_workers=10) as tp:
-            for dep in deps:
-                futures.append(tp.submit(search_mamba_for, dep.pkg, self.__cache))
+            for package in packages:
+                futures.append(tp.submit(search_mamba_for, package.name, self.__cache))
             wait(futures, return_when=ALL_COMPLETED)
         for result in futures:
             k, v = result.result()

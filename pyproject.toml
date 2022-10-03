@@ -21,6 +21,9 @@ ujson = "^5.5.0"
 types-PyYAML = "^6.0.11"
 filelock = "^3.8.0"
 alk-ci = "^1.1.44"
+rich = "^12.5.1"
+pyyaml = "^6.0"
+packaging = "^21.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.3"
