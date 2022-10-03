@@ -38,7 +38,7 @@ class LockFile:
         return list({PinnedPackage.make_from_specifier(name=name, specifier=version) for name, version in self})
 
     def __iter__(self):
-        modes = [InstallMode.DEFAULT] if self.__mode != InstallMode.DEV else [InstallMode.DEFAULT, InstallMode.DEV]
+        modes = [InstallMode.DEFAULT] if self.mode != InstallMode.DEV else [InstallMode.DEFAULT, InstallMode.DEV]
 
         for mode in modes:
             for element in self.__data[mode.value]:
