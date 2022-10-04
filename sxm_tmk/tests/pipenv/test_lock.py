@@ -14,15 +14,17 @@ def test_get_editable_packages(a_pipfile_lock):
     edit_pkgs = a_pipfile_lock.get_editable_packages()
     assert len(edit_pkgs) == 1
     assert "alk-service-test" in edit_pkgs
-    assert edit_pkgs["alk-service-test"] == Package("alk-service-test", version=None)
+    assert edit_pkgs["alk-service-test"] == Package("alk-service-test", version=None, build_number=None, build=None)
 
 
 def test_get_not_editable_pkg(a_pipfile_lock):
-    assert a_pipfile_lock.get_package("pytest") == Package("pytest", "7.1.2")
+    assert a_pipfile_lock.get_package("pytest") == Package("pytest", version="7.1.2", build_number=None, build=None)
 
 
 def test_get_editable_pkg(a_pipfile_lock):
-    assert a_pipfile_lock.get_package("alk-service-test") == Package("alk-service-test", None)
+    assert a_pipfile_lock.get_package("alk-service-test") == Package(
+        "alk-service-test", version=None, build_number=None, build=None
+    )
 
 
 def test_get_pkg_not_found(a_pipfile_lock):

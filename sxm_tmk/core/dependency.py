@@ -10,9 +10,19 @@ class InvalidVersion(Exception):
         super().__init__(f'Version "{version}" is invalid.')
 
 
+class InvalidConstraintSpecification(Exception):
+    def __init__(self, specifier):
+        super().__init__(f'Specifier "{specifier}" is invalid.')
+
+
 class BrokenVersionSpecifier(Exception):
     def __init__(self, version, specifier):
         super().__init__(f'Broken specifier: version "{version}" does not fulfil specifier "{specifier}" contract.')
+
+
+class NotComparablePackage(Exception):
+    def __init__(self, package: str):
+        super().__init__(f'Package "{package}" cannot be compared to another package: no version information found.')
 
 
 @dataclass(unsafe_hash=True)
@@ -23,17 +33,27 @@ class Package:
 
     name: str
     version: Optional[str]
+    build_number: Optional[int]
+    build: Optional[str]
 
-    def __str__(self):
-        if self.version:
-            return f"{self.name}-{self.version} {self.specifier}"
-        return f"{self.name} {self.specifier}"
+    def __repr__(self):
+        return f"{self.name}-{self.version or 'none'}-{self.build or 'none'}-{self.build_number or 'none'}"
+
+    def compare_key(self):
+        if self.version is not None and self.build_number is not None:
+            return self.version, self.build_number
+        elif self.version is not None and self.build_number is None:
+            return self.version
+        elif self.version is None and self.build_number is not None:
+            return self.build_number
+        else:
+            raise NotComparablePackage(self.name)
 
 
 @dataclass(unsafe_hash=True)
 class PinnedPackage(Package):
     """
-    A requirement specification, including also the version specifiers.
+    A requirement specification, including also the version specifier.
     """
 
     specifier: Specifier
@@ -44,19 +64,17 @@ class PinnedPackage(Package):
             if version not in self.specifier:
                 raise BrokenVersionSpecifier(self.version, str(self.specifier))
 
-    def __str__(self):
-        if self.version:
-            return f"{self.name}-{self.version} {self.specifier}"
-        return f"{self.name} {self.specifier}"
+    def __repr__(self):
+        return f"{super().__str__()} {self.specifier}"
 
     @classmethod
     def make(cls, name: str, version: str, specifier: str):
-        return cls(name=name, version=version, specifier=Specifier(specifier))
+        return cls(name=name, version=version, build_number=None, build=None, specifier=Specifier(specifier))
 
     @classmethod
-    def make_from_specifier(cls, name: str, specifier: str):
+    def from_specifier(cls, name: str, specifier: str):
         spec = Specifier(specifier)
-        return cls(name=name, version=spec.version, specifier=spec)
+        return cls(name=name, version=spec.version, build_number=None, build=None, specifier=spec)
 
 
 class Constraint:
@@ -69,6 +87,9 @@ class Constraint:
         self.__pkg_name: str = pkg_name
         self.__constraint_specifications = SpecifierSet(constraint_description.split(" ")[0])
 
+    def __repr__(self):
+        return f"{self.__pkg_name} | {self.__constraint_specifications}"
+
     @property
     def pkg_name(self) -> str:
         return self.__pkg_name
@@ -78,3 +99,14 @@ class Constraint:
             return pkg.version in self.__constraint_specifications and self.__pkg_name == pkg.name
         else:
             return False
+
+    @classmethod
+    def from_conda_depends(cls, depends_on: str):
+        depends_on_part = depends_on.split(" ")
+        if len(depends_on_part) < 2:
+            raise InvalidConstraintSpecification(depends_on)
+
+        has_operator = any((depends_on_part[1].startswith(op) for op in ("=", ">", "<")))
+        if not has_operator:
+            return cls(depends_on_part[0], f"=={depends_on_part[1]}")
+        return cls(depends_on_part[0], depends_on_part[1])

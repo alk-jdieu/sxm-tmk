@@ -32,9 +32,9 @@ def test_query_plan_search_result(tmp_path):
     ) as search_mock:
 
         all_pkgs_to_search = [
-            Package("numpy", "1.2.3"),
-            Package("pytest", "4.5.6"),
-            Package("thingy", "1.0.0"),
+            Package("numpy", version="1.2.3", build_number=None, build=None),
+            Package("pytest", version="4.5.6", build_number=None, build=None),
+            Package("thingy", version="1.0.0", build_number=None, build=None),
         ]
         q.search_and_mark(all_pkgs_to_search)
     assert search_mock.call_count == 3
