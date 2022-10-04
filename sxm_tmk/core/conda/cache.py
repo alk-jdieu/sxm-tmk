@@ -1,6 +1,7 @@
 import datetime
+import functools
 import pathlib
-from typing import Optional
+from typing import Callable, Optional
 
 import ujson
 
@@ -8,6 +9,8 @@ from sxm_tmk.core.conda.file_lock_wrapper import (
     LockMixin,
     ensure_lock_on_public_interface_call,
 )
+from sxm_tmk.core.dependency import Constraint, Package, PinnedPackage
+from sxm_tmk.core.types import Constraints, Packages
 
 CACHE_DIR: pathlib.Path = pathlib.Path.home() / ".sxm_tmk" / "conda_query_cache"
 
@@ -63,3 +66,75 @@ class CondaCache(LockMixin):
         if item_path.exists():
             return ujson.loads(item_path.read_text())
         return None
+
+
+def _no_restrict(version):  # noqa
+    return True
+
+
+def _restrict_with(spec, version):
+    return version in spec
+
+
+class PackageCacheExtractor:
+    """Extracts package from a cache key.
+    The extraction results in an ordered list using:
+     * version as primary key
+     * build_number as second key
+    """
+
+    def __init__(self, cache: CondaCache):
+        self.__cache = cache
+
+    @staticmethod
+    def _check_conditions(constraints: Constraints, conditions: Packages):
+        def join_constraint_on_condition(a_condition: Package, a_constraint: Constraint):
+            return a_constraint.pkg_name == a_condition.name
+
+        conditions_are_matched = [False] * len(conditions)
+        for i, condition in enumerate(conditions):
+            # Join constraints given our conditions
+            fix_condition_join = functools.partial(join_constraint_on_condition, condition)
+            joined_constraints = list(filter(fix_condition_join, constraints))
+            if joined_constraints:
+                conditions_are_matched[i] = any((constraint.ensure(condition) for constraint in joined_constraints))
+            else:
+                # If the current condition has no constraint on current package, consider condition as being ok.
+                conditions_are_matched[i] = True
+        return all(conditions_are_matched)
+
+    def _extract_matching_packages(
+        self, pkg_name: str, conditions: Packages, version_restrict: Callable[[str], bool]
+    ) -> Packages:
+        pkg_info = self.__cache[pkg_name]
+        if not pkg_info:
+            return []
+
+        all_matching_packages = []
+        for package_desc in pkg_info[pkg_name]:
+            _depends = package_desc["depends"]
+            depends: Constraints = [Constraint.from_conda_depends(specification) for specification in _depends]
+
+            if (conditions and self._check_conditions(depends, conditions)) or not conditions:
+                this_package_version = package_desc["version"]
+                if version_restrict(this_package_version):
+                    this_package = Package(
+                        name=pkg_name,
+                        version=this_package_version,
+                        build_number=package_desc["build_number"],
+                        build=package_desc["build"],
+                    )
+                    all_matching_packages.append(this_package)
+
+        return sorted(all_matching_packages, reverse=True, key=lambda p: p.compare_key())
+
+    def extract_packages(self, pkg: Package, conditions: Packages) -> Packages:
+        restriction = _no_restrict
+        if pkg.version is not None:
+            use_spec = PinnedPackage.from_specifier(pkg.name, f"=={pkg.version}").specifier
+            restriction = functools.partial(_restrict_with, use_spec)
+        return self._extract_matching_packages(pkg.name, conditions, restriction)
+
+    def extract_pinned_packages(self, pin_pkg: PinnedPackage, conditions: Packages) -> Packages:
+        restriction = functools.partial(_restrict_with, pin_pkg.specifier)
+        return self._extract_matching_packages(pin_pkg.name, conditions, restriction)

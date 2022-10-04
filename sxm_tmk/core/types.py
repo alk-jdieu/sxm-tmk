@@ -1,8 +1,9 @@
 import enum
 from typing import Dict, List
 
-from sxm_tmk.core.dependency import Package, PinnedPackage
+from sxm_tmk.core.dependency import Constraint, Package, PinnedPackage
 
+Constraints = List[Constraint]
 DictOfPackages = Dict[str, Package]
 Packages = List[Package]
 DictOfPinnedPackages = Dict[str, PinnedPackage]
