@@ -112,7 +112,7 @@ class PackageCacheExtractor:
 
         all_matching_packages = []
         for package_desc in pkg_info[pkg_name]:
-            _depends = package_desc["depends"]
+            _depends = list(filter(lambda pkg_constraint: " " in pkg_constraint, package_desc["depends"]))
             depends: Constraints = [Constraint.from_conda_depends(specification) for specification in _depends]
 
             if (conditions and self._check_conditions(depends, conditions)) or not conditions:
