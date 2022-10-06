@@ -1,7 +1,7 @@
 import collections
 import enum
 import pathlib
-from typing import Callable, Dict
+from typing import Callable, Dict, List
 
 import ujson as json
 
@@ -16,7 +16,13 @@ class LockFile:
         ALL_PACKAGES = 4
 
     def __init__(self, fspath: pathlib.Path):
-        self.__data = json.loads(fspath.read_text())
+        lock_file_path = fspath
+        if lock_file_path.name != "Pipfile.lock":
+            lock_file_path = lock_file_path / "Pipfile.lock"
+        if not lock_file_path.exists():
+            raise FileNotFoundError(f"Cannot find pipfile in '{lock_file_path.as_posix()}'.")
+
+        self.__data = json.loads(lock_file_path.read_text())
         self.__mode: InstallMode = InstallMode.DEV
         self.__filters: Dict[LockFile.PackageTypes, Callable[[collections.Mapping], bool]] = {
             LockFile.PackageTypes.EDITABLES_PACKAGES_ONLY: lambda pkg: "editable" in pkg,
@@ -57,6 +63,31 @@ class LockFile:
         for pkg, _ in self:
             edit_packages[pkg] = Package(name=pkg, version=None, build_number=None, build=None)
         return edit_packages
+
+    def get_sources(self) -> List[str]:
+        known_sources = self.__data.get("_meta", {}).get("sources", [])
+        sources = []
+        for source in known_sources:
+            sources.append(source.get("url", ""))
+        return list(filter(lambda u: u, sources))
+
+    def get_python_version(self) -> PinnedPackage:
+        version = None
+        try:
+            version = self.__data["_meta"]["requires"]["python_version"]
+        except KeyError:
+            for key in ("python_full_version", "python_version"):
+                try:
+                    if version:
+                        continue
+                    version = self.__data["_meta"]["host-environment-markers"][key]
+                except KeyError:
+                    pass
+
+        py_pkg = Package("python", version, None, None)
+        py_pkg_version = py_pkg.parse_version()
+        pinned_version = f"~={py_pkg_version.major}.{py_pkg_version.minor}.{py_pkg_version.micro}"
+        return PinnedPackage.from_specifier("python", pinned_version)
 
     def get_package(self, pkg: str) -> Package:
         for mode in [InstallMode.DEFAULT, InstallMode.DEV]:

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from packaging.specifiers import Specifier, SpecifierSet
-from packaging.version import parse
+from packaging.version import Version, parse
 
 
 class InvalidVersion(Exception):
@@ -36,14 +36,17 @@ class Package:
     build_number: Optional[int]
     build: Optional[str]
 
-    def __repr__(self):
-        return f"{self.name}-{self.version or 'none'}-{self.build or 'none'}-{self.build_number or 'none'}"
+    def parse_version(self) -> Version:  # type: ignore
+        this_version = self.version or "0.0.0"
+        version = parse(this_version)
+        if not isinstance(version, Version):
+            raise InvalidVersion("Unable to parse version '{this_version}'.")
 
     def compare_key(self):
         if self.version is not None and self.build_number is not None:
-            return self.version, self.build_number
+            return self.parse_version(), self.build_number
         elif self.version is not None and self.build_number is None:
-            return self.version
+            return self.parse_version()
         elif self.version is None and self.build_number is not None:
             return self.build_number
         else:
@@ -64,8 +67,8 @@ class PinnedPackage(Package):
             if version not in self.specifier:
                 raise BrokenVersionSpecifier(self.version, str(self.specifier))
 
-    def __repr__(self):
-        return f"{super().__str__()} {self.specifier}"
+    # def __repr__(self):
+    #     return f"{super().__str__()} {self.specifier}"
 
     @classmethod
     def make(cls, name: str, version: str, specifier: str):

@@ -12,6 +12,16 @@
                 "name": "alkemics",
                 "url": "https://${ALK_PYPI_USERNAME}:${ALK_PYPI_PASSWORD}@pypi.alkemics.com:8443/simple",
                 "verify_ssl": true
+            },
+            {
+                "name": "public",
+                "url": "https://pypi.org:8443/simple",
+                "verify_ssl": true
+            },
+            {
+                "name": "invalid",
+                "url": "",
+                "verify_ssl": true
             }
         ]
     },
