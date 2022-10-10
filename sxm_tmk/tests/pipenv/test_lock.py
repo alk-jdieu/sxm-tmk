@@ -58,5 +58,5 @@ def test_get_sources(a_pipfile_lock):
 
 def test_get_python_version(a_pipfile_lock):
     got = a_pipfile_lock.get_python_version()
-    py = PinnedPackage.from_specifier("python", "~=3.8.0")
+    py = PinnedPackage.from_specifier("python", "3.8", "~=3.8.0")
     assert py == got

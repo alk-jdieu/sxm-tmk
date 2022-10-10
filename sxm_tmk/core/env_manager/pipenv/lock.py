@@ -5,7 +5,7 @@ from typing import Callable, Dict, List
 
 import ujson as json
 
-from sxm_tmk.core.dependency import Package, PinnedPackage
+from sxm_tmk.core.dependency import Package, PinnedPackage, clean_version
 from sxm_tmk.core.types import DictOfPackages, InstallMode, PinnedPackages
 
 
@@ -41,7 +41,9 @@ class LockFile:
 
     def list_dependencies(self) -> PinnedPackages:
         self.__pkg_filter = self.__filters[LockFile.PackageTypes.EXCLUDE_EDITABLES_PACKAGES]
-        return list({PinnedPackage.from_specifier(name=name, specifier=version) for name, version in self})
+        return list(
+            {PinnedPackage.from_specifier(name=name, version=version[2:], specifier=version) for name, version in self}
+        )
 
     def __iter__(self):
         modes = [InstallMode.DEFAULT] if self.mode != InstallMode.DEV else [InstallMode.DEFAULT, InstallMode.DEV]
@@ -87,14 +89,16 @@ class LockFile:
         py_pkg = Package("python", version, None, None)
         py_pkg_version = py_pkg.parse_version()
         pinned_version = f"~={py_pkg_version.major}.{py_pkg_version.minor}.{py_pkg_version.micro}"
-        return PinnedPackage.from_specifier("python", pinned_version)
+        return PinnedPackage.from_specifier("python", version, pinned_version)
 
     def get_package(self, pkg: str) -> Package:
         for mode in [InstallMode.DEFAULT, InstallMode.DEV]:
             try:
                 pkg_info = self.__data[mode.value][pkg]
                 if self.__filters[LockFile.PackageTypes.EXCLUDE_EDITABLES_PACKAGES](pkg_info):
-                    pinned_package = PinnedPackage.from_specifier(pkg, specifier=pkg_info["version"])
+                    pinned_package = PinnedPackage.from_specifier(
+                        pkg, version=clean_version(pkg_info["version"]), specifier=pkg_info["version"]
+                    )
                     return Package(pinned_package.name, version=pinned_package.version, build_number=None, build=None)
                 return Package(pkg, version=None, build_number=None, build=None)
             except KeyError:

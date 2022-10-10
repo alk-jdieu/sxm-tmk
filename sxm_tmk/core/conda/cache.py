@@ -87,15 +87,15 @@ class PackageCacheExtractor:
         self.__cache = cache
 
     @staticmethod
-    def _check_conditions(constraints: Constraints, conditions: Packages):
+    def _check_conditions_on_pkg_requirements(pkg_requires: Constraints, conditions: Packages):
         def join_constraint_on_condition(a_condition: Package, a_constraint: Constraint):
             return a_constraint.pkg_name == a_condition.name
 
         conditions_are_matched = [False] * len(conditions)
         for i, condition in enumerate(conditions):
             # Join constraints given our conditions
-            fix_condition_join = functools.partial(join_constraint_on_condition, condition)
-            joined_constraints = list(filter(fix_condition_join, constraints))
+            fix_condition_joiner = functools.partial(join_constraint_on_condition, condition)
+            joined_constraints = list(filter(fix_condition_joiner, pkg_requires))
             if joined_constraints:
                 conditions_are_matched[i] = any((constraint.ensure(condition) for constraint in joined_constraints))
             else:
@@ -107,7 +107,7 @@ class PackageCacheExtractor:
         self, pkg_name: str, conditions: Packages, version_restrict: Callable[[str], bool]
     ) -> Packages:
         pkg_info = self.__cache[pkg_name]
-        if not pkg_info:
+        if not pkg_info or pkg_name not in pkg_info:
             return []
 
         all_matching_packages = []
@@ -115,15 +115,15 @@ class PackageCacheExtractor:
             _depends = list(filter(lambda pkg_constraint: " " in pkg_constraint, package_desc["depends"]))
             depends: Constraints = [Constraint.from_conda_depends(specification) for specification in _depends]
 
-            if (conditions and self._check_conditions(depends, conditions)) or not conditions:
-                this_package_version = package_desc["version"]
-                if version_restrict(this_package_version):
-                    this_package = Package(
-                        name=pkg_name,
-                        version=this_package_version,
-                        build_number=package_desc["build_number"],
-                        build=package_desc["build"],
-                    )
+            this_package_version = package_desc["version"]
+            if (conditions and self._check_conditions_on_pkg_requirements(depends, conditions)) or not conditions:
+                this_package = Package(
+                    name=pkg_name,
+                    version=this_package_version,
+                    build_number=package_desc["build_number"],
+                    build=package_desc["build"],
+                )
+                if version_restrict(this_package.parse_version().base_version):
                     all_matching_packages.append(this_package)
 
         return sorted(all_matching_packages, reverse=True, key=lambda p: p.compare_key())
@@ -131,7 +131,7 @@ class PackageCacheExtractor:
     def extract_packages(self, pkg: Package, conditions: Packages) -> Packages:
         restriction = _no_restrict
         if pkg.version is not None:
-            use_spec = PinnedPackage.from_specifier(pkg.name, f"=={pkg.version}").specifier
+            use_spec = PinnedPackage.from_specifier(pkg.name, pkg.version, f"=={pkg.version}").specifier
             restriction = functools.partial(_restrict_with, use_spec)
         return self._extract_matching_packages(pkg.name, conditions, restriction)
 

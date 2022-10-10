@@ -1,8 +1,13 @@
 from dataclasses import dataclass
 from typing import Optional
 
+import packaging.specifiers
 from packaging.specifiers import Specifier, SpecifierSet
 from packaging.version import Version, parse
+
+ALPHA = "abcdefghijklmnopqrstuvwxyz"
+OPERATOR_BOUNDARY = [">=", "<=", "==", "~=", "!="]
+OPERATOR_BOUNDARY_STRICT = ["<", ">", "="]
 
 
 class InvalidVersion(Exception):
@@ -25,6 +30,38 @@ class NotComparablePackage(Exception):
         super().__init__(f'Package "{package}" cannot be compared to another package: no version information found.')
 
 
+def clean_version(version: str) -> str:
+    if any((version.startswith(this_op) for this_op in OPERATOR_BOUNDARY)):
+        version = version[2:]
+    elif any((version.startswith(this_op) for this_op in OPERATOR_BOUNDARY_STRICT)):
+        version = version[1:]
+
+    try:
+        index = ALPHA.index(version[-1].lower())
+    except ValueError:
+        return version
+    return f"{version[:-1]}.{str(index + 1)}"
+
+
+def _canonicalize_specifier(specifier: str):
+    if any((specifier.startswith(this_op) for this_op in OPERATOR_BOUNDARY)):
+        op = specifier[0:2]
+    elif any((specifier.startswith(this_op) for this_op in OPERATOR_BOUNDARY_STRICT)):
+        op = specifier[0]
+    else:
+        op = "=="
+    try:
+        index = ALPHA.index(specifier[-1].lower())
+    except ValueError:
+        return specifier
+    return f"{op}{specifier[len(op):-1]}.{str(index + 1)}"
+
+
+def _canonicalize_specifier_set(specifiers: str):
+    spec_set = specifiers.split(",")
+    return ",".join((_canonicalize_specifier(spec) for spec in spec_set))
+
+
 @dataclass(unsafe_hash=True)
 class Package:
     """
@@ -37,10 +74,11 @@ class Package:
     build: Optional[str]
 
     def parse_version(self) -> Version:  # type: ignore
-        this_version = self.version or "0.0.0"
+        this_version = clean_version(self.version or "0.0.0")
         version = parse(this_version)
         if not isinstance(version, Version):
-            raise InvalidVersion("Unable to parse version '{this_version}'.")
+            raise InvalidVersion(self.version)
+        return version
 
     def compare_key(self):
         if self.version is not None and self.build_number is not None:
@@ -67,17 +105,15 @@ class PinnedPackage(Package):
             if version not in self.specifier:
                 raise BrokenVersionSpecifier(self.version, str(self.specifier))
 
-    # def __repr__(self):
-    #     return f"{super().__str__()} {self.specifier}"
-
     @classmethod
     def make(cls, name: str, version: str, specifier: str):
         return cls(name=name, version=version, build_number=None, build=None, specifier=Specifier(specifier))
 
     @classmethod
-    def from_specifier(cls, name: str, specifier: str):
+    def from_specifier(cls, name: str, version: Optional[str], specifier: str):
+        specifier = _canonicalize_specifier(specifier)
         spec = Specifier(specifier)
-        return cls(name=name, version=spec.version, build_number=None, build=None, specifier=spec)
+        return cls(name=name, version=version, build_number=None, build=None, specifier=spec)
 
 
 class Constraint:
@@ -88,7 +124,10 @@ class Constraint:
 
     def __init__(self, pkg_name: str, constraint_description: str):
         self.__pkg_name: str = pkg_name
-        self.__constraint_specifications = SpecifierSet(constraint_description.split(" ")[0])
+        try:
+            self.__constraint_specifications = SpecifierSet(constraint_description.split(" ")[0])
+        except packaging.specifiers.InvalidSpecifier:
+            raise InvalidConstraintSpecification(constraint_description.split(" ")[0])
 
     def __repr__(self):
         return f"{self.__pkg_name} | {self.__constraint_specifications}"
@@ -99,7 +138,8 @@ class Constraint:
 
     def ensure(self, pkg: Package) -> bool:
         if pkg.version:
-            return pkg.version in self.__constraint_specifications and self.__pkg_name == pkg.name
+            pkg_version = pkg.parse_version()
+            return pkg_version in self.__constraint_specifications and self.__pkg_name == pkg.name
         else:
             return False
 
@@ -109,7 +149,11 @@ class Constraint:
         if len(depends_on_part) < 2:
             raise InvalidConstraintSpecification(depends_on)
 
-        has_operator = any((depends_on_part[1].startswith(op) for op in ("=", ">", "<")))
-        if not has_operator:
-            return cls(depends_on_part[0], f"=={depends_on_part[1]}")
-        return cls(depends_on_part[0], depends_on_part[1])
+        depends_on_part[1] = _canonicalize_specifier_set(depends_on_part[1])
+        spec_set = depends_on_part[1].split(",")
+        has_operators = [any(spec.startswith(op) for op in ("=", ">", "<")) for spec in spec_set]
+        for i, has_operator in enumerate(has_operators):
+            if not has_operator:
+                spec_set[i] = f"=={spec_set[i]}"
+
+        return cls(depends_on_part[0], ",".join(spec_set))

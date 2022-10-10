@@ -1,9 +1,66 @@
+from subprocess import CalledProcessError
+
 import mock
 import ujson
 
 from sxm_tmk.core.conda.cache import CondaCache
-from sxm_tmk.core.conda.repo import QueryPlan, SearchStatus
+from sxm_tmk.core.conda.repo import QueryPlan, SearchStatus, search_mamba_for
 from sxm_tmk.core.dependency import Package
+
+
+def test_search_mamba_package_issue(tmp_path):
+    cache = CondaCache(tmp_path)
+    with mock.patch("sxm_tmk.core.conda.repo.subprocess.check_output") as mocked_search:
+        mocked_search.side_effect = CalledProcessError(3, cmd="mamba search something")
+        result, pkg = search_mamba_for("something", cache)
+        assert result == SearchStatus.NOT_FOUND
+        assert pkg == "something"
+    mocked_search.assert_called_once()
+
+
+def test_search_mamba_package_not_found(tmp_path):
+    cache = CondaCache(tmp_path)
+    with mock.patch("sxm_tmk.core.conda.repo.subprocess.check_output") as mocked_search:
+        mocked_search.return_value = ujson.dumps(
+            {
+                "caused_by": "None",
+                "channel_urls": [
+                    "https://conda.anaconda.org/conda-forge/osx-arm64",
+                    "https://conda.anaconda.org/conda-forge/noarch",
+                ],
+                "channels_formatted": "  - https://conda.anaconda.org/conda-forge/osx-arm64",
+                "error": "PackagesNotFoundError: This packages are not available from current channels: attrs2",
+                "exception_name": "PackagesNotFoundError",
+                "exception_type": "<class 'conda.exceptions.PackagesNotFoundError'>",
+                "message": "The following packages are not available from current channels: attrs2",
+                "packages": ["attrs2"],
+                "packages_formatted": "  - attrs2",
+            }
+        )
+        result, pkg = search_mamba_for("something", cache)
+        assert result == SearchStatus.NOT_FOUND
+        assert pkg == "something"
+    mocked_search.assert_called_once()
+
+
+def test_search_mamba_package_found_in_cache(tmp_path):
+    cache = CondaCache(tmp_path)
+    cache.store("something", ujson.dumps({"some": "value", "value": 42}))
+    with mock.patch("sxm_tmk.core.conda.repo.subprocess.check_output") as mocked_search:
+        result, pkg = search_mamba_for("something", cache)
+        assert result == SearchStatus.FOUND_IN_CACHE
+        assert pkg == "something"
+    mocked_search.assert_not_called()
+
+
+def test_search_mamba_package_found_in_forge(tmp_path):
+    cache = CondaCache(tmp_path)
+    with mock.patch("sxm_tmk.core.conda.repo.subprocess.check_output") as mocked_search:
+        mocked_search.return_value = ujson.dumps({"some": "value", "value": 42}).encode("utf8")
+        result, pkg = search_mamba_for("something", cache)
+        assert result == SearchStatus.FOUND_IN_REPOSITORY
+        assert pkg == "something"
+    mocked_search.assert_called_once()
 
 
 def search_mamba_for_replacement(dep: str, cache: CondaCache):

@@ -55,7 +55,7 @@ def test_cache_extractor_two_conditions_version_restrict(cache_with_numpy, numpy
         Package(name="libcxx", version="11.8.2", build_number=None, build=None),
     ]
 
-    pin_numpy_at_1_19_5 = PinnedPackage.from_specifier(numpy_package.name, "==1.19.5")
+    pin_numpy_at_1_19_5 = PinnedPackage.from_specifier(numpy_package.name, "1.19.5", "==1.19.5")
     numpy_1_19_5: Packages = [
         Package(name="numpy", version="1.19.5", build_number=3, build="py38he594345_3"),
         Package(name="numpy", version="1.19.5", build_number=2, build="py38hbf7bb01_2"),
@@ -70,7 +70,7 @@ def test_cache_extractor_two_conditions_version_restrict(cache_with_numpy, numpy
 def test_cache_extractor_unknown_package(tmp_path, numpy_package):
     a_cache = CondaCache(cache_dir=tmp_path)
     pkg_extractor = PackageCacheExtractor(a_cache)
-    numpy_pin_at_1_19_5 = PinnedPackage.from_specifier(numpy_package.name, "==1.19.5")
+    numpy_pin_at_1_19_5 = PinnedPackage.from_specifier(numpy_package.name, "1.19.5", "==1.19.5")
 
     assert not pkg_extractor.extract_pinned_packages(numpy_pin_at_1_19_5, [])
     assert not pkg_extractor.extract_packages(numpy_package, [])
