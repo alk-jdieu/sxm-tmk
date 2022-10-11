@@ -33,8 +33,13 @@ class CondaCache(LockMixin):
     def clean(self):
         xpire_time = compute_expiry_time()
         delete_file = None
+
+        res = {"deleted": 0, "space-claimed": 0}
+
         for pkg_file_query in self.__cache_dir.iterdir():
             if delete_file is not None:
+                res["deleted"] = res["deleted"] + 1
+                res["space-claimed"] = res["space-claimed"] + delete_file.stat().st_size
                 delete_file.unlink()
                 delete_file = None
             if pkg_file_query.suffix == ".json":
@@ -44,7 +49,10 @@ class CondaCache(LockMixin):
                 except KeyError:
                     delete_file = pkg_file_query
         if delete_file is not None:
+            res["deleted"] = res["deleted"] + 1
+            res["space-claimed"] = res["space-claimed"] + delete_file.stat().st_size
             delete_file.unlink()
+        return res
 
     def store(self, pkg: str, content: str):
         pkg_file = self.__cache_dir / f"{pkg}.json"

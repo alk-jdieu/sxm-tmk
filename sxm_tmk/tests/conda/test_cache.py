@@ -100,9 +100,11 @@ def test_cache_expiry(mock_expiry_time, tmp_path):
     a_cache.store("something", ujson.dumps({"stuff": {"pkg_name": "something", "version": "1.0.0"}}))
     assert "something" in a_cache
     mock_expiry_time.assert_not_called()
-    a_cache.clean()
+    result = a_cache.clean()
     mock_expiry_time.assert_called()
     assert "something" not in a_cache
+    assert result["deleted"] == 1
+    assert 90 < result["space-claimed"] < 100
 
 
 def test_cache_lock(tmp_path):
