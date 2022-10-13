@@ -70,7 +70,10 @@ class LockFile:
         known_sources = self.__data.get("_meta", {}).get("sources", [])
         sources = []
         for source in known_sources:
-            sources.append(source.get("url", ""))
+            url = source.get("url", "")
+            if url != "https://pypi.org:8443/simple":
+                # We need to exclude public pypi as it cause PIP to hang out with --extra-index-url option
+                sources.append(source.get("url", ""))
         return list(filter(lambda u: u, sources))
 
     def get_python_version(self) -> PinnedPackage:

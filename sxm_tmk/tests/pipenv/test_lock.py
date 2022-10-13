@@ -51,7 +51,6 @@ def test_get_pkg_not_found(a_pipfile_lock):
 def test_get_sources(a_pipfile_lock):
     expected = [
         "https://${ALK_PYPI_USERNAME}:${ALK_PYPI_PASSWORD}@pypi.alkemics.com:8443/simple",
-        "https://pypi.org:8443/simple",
     ]
     assert expected == a_pipfile_lock.get_sources()
 
