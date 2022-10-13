@@ -18,16 +18,27 @@ class RichBackEnd(BackEndBase):
         self.__impl.print(message)
 
     def info(self, msg: str, indent: Optional[str] = None) -> None:
+        indent = indent or ""
         self.__impl.print(f"{indent}{msg}")
 
     def debug(self, msg: str, indent: Optional[str] = None) -> None:
+        indent = indent or ""
         self.__impl.print(f"{indent}[grey]{msg}[/grey]")
 
     def error(self, msg: str, indent: Optional[str] = None) -> None:
+        indent = indent or ""
         self.__impl.print(f"{indent}[red]{msg}[/red]")
 
     def warning(self, msg: str, indent: Optional[str] = None) -> None:
+        indent = indent or ""
         self.__impl.print(f"{indent}[bold]{msg}[/bold]")
+
+    def step(self, message: str, state: bool, indent: Optional[str] = None) -> None:
+        indent = indent or ""
+        if state:
+            self.__impl.print(f"{indent}:white_heavy_check_mark:   {message}")
+        else:
+            self.__impl.print(f"{indent}:cross_mark:   {message}")
 
     def build_progress(self) -> Any:
         return self.build("progress")

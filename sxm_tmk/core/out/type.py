@@ -48,3 +48,7 @@ class BackEndBase:
     @abc.abstractmethod
     def build_status(self, message: str) -> Any:
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def step(self, message: str, state: bool, indent: Optional[str] = None) -> None:
+        raise NotImplementedError

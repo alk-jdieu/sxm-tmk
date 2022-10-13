@@ -47,6 +47,14 @@ class TTYBackEnd(BackEndBase):
         finally:
             self.__lock.release()
 
+    def step(self, message: str, state: bool, indent: Optional[str] = None) -> None:
+        try:
+            self.__lock.acquire()
+            state_str = "OK" if state else "KO"
+            sys.stdout.write(f'{indent or ""}[{state_str}] {message}\n')
+        finally:
+            self.__lock.release()
+
     def build_status(self, message) -> Any:
         return self.build("status", self, message)
 

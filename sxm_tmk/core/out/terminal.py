@@ -44,11 +44,8 @@ class Terminal(metaclass=Singleton):
     def tab(self, value):
         self.__tab = value
 
-    def step_status(self, message: str, status: bool):
-        if status:
-            self.__backend.write(self.tab * "  " + f":white_heavy_check_mark:   {message}")
-        else:
-            self.__backend.write(self.tab * "  " + f":cross_mark:   {message}")
+    def step(self, message: str, status: bool):
+        self.__backend.step(message, status, self.tab * "  ")
 
 
 class Section:

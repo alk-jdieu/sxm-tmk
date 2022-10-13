@@ -30,6 +30,9 @@ class NullBackEnd(BackEndBase):
     def build_status(self, message: str) -> Any:
         return self.build("status", message)
 
+    def step(self, message: str, state: bool, indent: Optional[str] = None) -> None:
+        pass
+
 
 class NullProgress:
     def __init__(self):
