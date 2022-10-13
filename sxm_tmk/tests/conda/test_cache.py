@@ -101,7 +101,21 @@ def test_cache_expiry(mock_expiry_time, tmp_path):
     assert "something" in a_cache
     mock_expiry_time.assert_not_called()
     result = a_cache.clean()
-    mock_expiry_time.assert_called()
+    mock_expiry_time.assert_called_once_with(False)
+    assert "something" not in a_cache
+    assert result["deleted"] == 1
+    assert 90 < result["space-claimed"] < 100
+
+
+def test_cache_expiry_force_now(tmp_path):
+    a_cache: CondaCache = CondaCache(tmp_path)
+    a_cache.store("something", ujson.dumps({"stuff": {"pkg_name": "something", "version": "1.0.0"}}))
+    assert "something" in a_cache
+    result = a_cache.clean()
+    assert result["deleted"] == 0
+    assert result["space-claimed"] == 0
+    assert "something" in a_cache
+    result = a_cache.clean(now=True)
     assert "something" not in a_cache
     assert result["deleted"] == 1
     assert 90 < result["space-claimed"] < 100

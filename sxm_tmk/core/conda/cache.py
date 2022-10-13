@@ -15,7 +15,9 @@ from sxm_tmk.core.types import Constraints, Packages
 CACHE_DIR: pathlib.Path = pathlib.Path.home() / ".sxm_tmk" / "conda_query_cache"
 
 
-def compute_expiry_time() -> float:
+def compute_expiry_time(force_now: bool = False) -> float:
+    if force_now:
+        return datetime.datetime.now().timestamp()
     now = datetime.datetime.now() - datetime.timedelta(days=1)
     return now.timestamp()
 
@@ -30,8 +32,8 @@ class CondaCache(LockMixin):
         lock_file_path.touch(exist_ok=True)
         super().__init__(lock_file_path)
 
-    def clean(self):
-        xpire_time = compute_expiry_time()
+    def clean(self, now: bool = False):
+        expiry_time = compute_expiry_time(now)
         delete_file = None
 
         res = {"deleted": 0, "space-claimed": 0}
@@ -45,7 +47,7 @@ class CondaCache(LockMixin):
             if pkg_file_query.suffix == ".json":
                 data = ujson.loads(pkg_file_query.read_text())
                 try:
-                    delete_file = pkg_file_query if data["sxm_tmk"]["query_date"] < xpire_time else None
+                    delete_file = pkg_file_query if data["sxm_tmk"]["query_date"] < expiry_time else None
                 except KeyError:
                     delete_file = pkg_file_query
         if delete_file is not None:
