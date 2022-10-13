@@ -90,6 +90,18 @@ class Package:
         else:
             raise NotComparablePackage(self.name)
 
+    def format_conda(self) -> str:
+        if self.build is not None and self.build_number is None:
+            return f"{self.name}-{self.version} ({self.build})"
+        if self.build_number is not None and self.build is not None:
+            return f"{self.name}-{self.version} ({self.build} #{self.build_number})"
+        return f"{self.name}-{self.version}"
+
+    def format_pip(self) -> str:
+        if self.version is not None:
+            return f"{self.name}=={self.version}"
+        return f"{self.name}"
+
 
 @dataclass(unsafe_hash=True)
 class PinnedPackage(Package):
@@ -114,6 +126,9 @@ class PinnedPackage(Package):
         specifier = _canonicalize_specifier(specifier)
         spec = Specifier(specifier)
         return cls(name=name, version=version, build_number=None, build=None, specifier=spec)
+
+    def format_conda(self) -> str:
+        return f"{self.name} {self.specifier}"
 
 
 class Constraint:
