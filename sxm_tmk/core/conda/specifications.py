@@ -21,12 +21,6 @@ class Pip(BaseModel):
     packages: Packages = Field(default=[])
     extra_indexes: List[str] = Field(default=[])
 
-    def __post_init__(self):
-        if not self.extra_indexes:
-            self.extra_indexes = []
-        if not self.packages:
-            self.packages = []
-
 
 class Environment(BaseModel):
     name: str
