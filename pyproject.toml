@@ -24,6 +24,7 @@ alk-ci = "^1.1.44"
 rich = "^12.5.1"
 pyyaml = "^6.0"
 packaging = "^21.3"
+pydantic = "^1.10.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.3"
