@@ -3,8 +3,29 @@ import os
 import pathlib
 import stat
 import subprocess
+import tempfile
 from os import getcwd
 from typing import List, Optional
+
+
+class ExecutionDir:
+    def __init__(self, use_tempdir: bool = True, force_dir: Optional[pathlib.Path] = None):
+        self.__use_temp_dir = use_tempdir
+        self.__force_dir = force_dir
+        self.__cwd: pathlib.Path = pathlib.Path.cwd()
+
+    def __enter__(self):
+        if self.__force_dir is not None:
+            use_dir = self.__force_dir
+        else:
+            use_dir = pathlib.Path(tempfile.gettempdir())
+        if not use_dir.exists():
+            use_dir.mkdir(parents=True, exist_ok=True)  # We do not want errors to pop out
+        self.__cwd: pathlib.Path = pathlib.Path.cwd()
+        os.chdir(use_dir.as_posix())
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        os.chdir(self.__cwd.as_posix())
 
 
 class BashScript:
