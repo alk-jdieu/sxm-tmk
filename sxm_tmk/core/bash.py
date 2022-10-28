@@ -16,6 +16,7 @@ class BashScript:
         self.__exec_info: Optional[subprocess.CompletedProcess] = None
         self.__behaviour_exit_on_error = exit_on_error
         self.__behaviour_echo_statement = echo_statement
+        self.__timed_out: Optional[bool] = None
 
     def _shebang(self):
         if self.__behaviour_exit_on_error and self.__behaviour_echo_statement:
@@ -44,11 +45,21 @@ class BashScript:
         with contextlib.suppress(subprocess.TimeoutExpired):
             os.chmod(file_path.as_posix(), stat.S_IREAD | stat.S_IWRITE | stat.S_IEXEC | stat.S_IRUSR | stat.S_IRGRP)
             self.__exec_info = subprocess.run([exec_path], shell=True, capture_output=True, timeout=timeout)
+            self.__timed_out = False
         if self.__exec_info is None:
+            self.__timed_out = True
             self.__exec_info = subprocess.CompletedProcess(
                 args=exec_path, returncode=100, stdout=b"", stderr=b"Timed out\n"
             )
         return self.__exec_info.returncode
+
+    def reset(self):
+        self.__timed_out = None
+        self.__exec_info = None
+
+    @property
+    def has_completed(self) -> bool:
+        return not self.__timed_out if self.__timed_out is not None else False
 
     @property
     def return_code(self) -> int:
