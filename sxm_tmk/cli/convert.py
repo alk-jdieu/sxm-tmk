@@ -1,6 +1,7 @@
 import pathlib
 
 from sxm_tmk.converters.pipenv import FromPipenv
+from sxm_tmk.core.custom_types import TMKLockFileNotFound
 from sxm_tmk.core.out.terminal import Terminal
 
 
@@ -25,5 +26,9 @@ def setup(subparser):
 
 def main(options):
     Terminal("rich")
-    processor = FromPipenv(options.path, options.jobs, options.dev)
-    return processor.convert()
+    try:
+        processor = FromPipenv(options.path, options.jobs, options.dev)
+        return processor.convert()
+    except TMKLockFileNotFound as e:
+        Terminal().error(str(e))
+        return 1

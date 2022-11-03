@@ -3,7 +3,7 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
-from sxm_tmk.core.types import Packages
+from sxm_tmk.core.custom_types import Packages
 
 
 class Conda(BaseModel):

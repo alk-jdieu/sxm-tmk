@@ -5,10 +5,10 @@ from sxm_tmk.converters.base import Base
 from sxm_tmk.core.conda.cache import CondaCache, PackageCacheExtractor
 from sxm_tmk.core.conda.repo import QueryPlan
 from sxm_tmk.core.conda.specifications import Environment
+from sxm_tmk.core.custom_types import InstallMode, Packages, PinnedPackages
 from sxm_tmk.core.dependency import PinnedPackage
 from sxm_tmk.core.env_manager.pipenv.lock import LockFile
 from sxm_tmk.core.out.terminal import Progress, Section, Status, Terminal
-from sxm_tmk.core.types import InstallMode, Packages, PinnedPackages
 
 
 class FromPipenv(Base):

@@ -9,8 +9,8 @@ from sxm_tmk.core.conda.file_lock_wrapper import (
     LockMixin,
     ensure_lock_on_public_interface_call,
 )
+from sxm_tmk.core.custom_types import Constraints, Packages
 from sxm_tmk.core.dependency import Constraint, Package, PinnedPackage
-from sxm_tmk.core.types import Constraints, Packages
 
 CACHE_DIR: pathlib.Path = pathlib.Path.home() / ".sxm_tmk" / "conda_query_cache"
 

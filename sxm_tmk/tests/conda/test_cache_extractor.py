@@ -1,6 +1,6 @@
 from sxm_tmk.core.conda.cache import CondaCache, PackageCacheExtractor
+from sxm_tmk.core.custom_types import Packages
 from sxm_tmk.core.dependency import Package, PinnedPackage
-from sxm_tmk.core.types import Packages
 
 
 def test_cache_extractor_without_conditions(cache_with_numpy, numpy_package):

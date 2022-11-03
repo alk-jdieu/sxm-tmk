@@ -6,8 +6,8 @@ from typing import Dict, List, Optional
 import ujson
 
 from sxm_tmk.core.conda.cache import CondaCache
+from sxm_tmk.core.custom_types import Packages
 from sxm_tmk.core.out.terminal import Progress
-from sxm_tmk.core.types import Packages
 
 
 class SearchStatus(enum.Enum):
