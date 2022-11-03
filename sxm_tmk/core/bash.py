@@ -47,7 +47,17 @@ class BashScript:
         elif not self.__behaviour_exit_on_error and self.__behaviour_echo_statement:
             self.__script.insert(0, "set -x")
         self.__script.insert(0, "")
-        self.__script.insert(0, "#!/opt/homebrew/bin/bash")
+        # Let's find the most appropriate path to bash
+        path_to_bash = "/usr/bin/env bash"
+        with contextlib.suppress(subprocess.SubprocessError):
+            run_info = subprocess.Popen(["command", "-v", "bash"], stdout=subprocess.PIPE)
+            out, _ = run_info.communicate()
+            if run_info.returncode == 0:
+                out = [line.decode("utf8") for line in out.split()]
+                out = list(filter(lambda line: line, out))
+                with contextlib.suppress(IndexError):
+                    path_to_bash = out[0]
+        self.__script.insert(0, f"#!{path_to_bash}")
 
     def _write(self):
         p = pathlib.Path(getcwd()) / self.__script_name
