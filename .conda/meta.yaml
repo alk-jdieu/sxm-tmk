@@ -1,0 +1,52 @@
+{% set name = "sxm-tmk" %}
+{% set version = "1.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: ../dist/{{ name }}-{{ version }}.tar.gz
+  sha256: cd469d3f1c013a56d6cb0efe3dbca8850735b434f7fc06bfb418eab1a9433423
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install --no-deps  . -vv
+  entry_points:
+    - tmk = sxm_tmk.cli.sxm_tmk:main
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+    - poetry
+  run:
+    - filelock
+    - python >=3.8
+    - packaging
+    - pydantic
+    - pyyaml
+    - rich
+    - ujson
+
+test:
+  commands:
+    - tmk --version
+
+about:
+  home: https://github.com/alk-jdieu/sxm-tmk
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Manage sxm development environments with conda.
+  description: |
+    One tool to rule your envs, one tool to find your requirements and in the brightness bind them all.
+    `tmk` allow to convert pipenv environment to conda in order to leverage platform compatibility issue and achieve
+    a better way to reproduce environments.
+  dev_url: https://github.com/alk-jdieu/sxm-tmk
+
+extra:
+  recipe-maintainers:
+    - alk-jdieu
+
