@@ -7,7 +7,7 @@ package:
 
 source:
   url: ../dist/{{ name }}-{{ version }}.tar.gz
-  sha256: cd469d3f1c013a56d6cb0efe3dbca8850735b434f7fc06bfb418eab1a9433423
+  sha256: fe62386bd28c9017a2bbb02790dd14b31e001be5de7790032904897fea25977e
 
 build:
   number: 0
