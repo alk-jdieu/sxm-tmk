@@ -1,8 +1,18 @@
 import pathlib
+import time
 
 import pytest
 
 from sxm_tmk.core.env_manager.pipenv.lock import LockFile
+
+
+@pytest.fixture()
+def bash_script_cleaner():
+    basename = f"{int(time.time())}.sh"
+    yield basename
+    path = pathlib.Path.cwd() / basename
+    if path.exists():
+        path.unlink()
 
 
 @pytest.fixture()
