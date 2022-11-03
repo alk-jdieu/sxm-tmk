@@ -1,8 +1,8 @@
 import pytest
 
+from sxm_tmk.core.custom_types import InstallMode, TMKLockFileNotFound
 from sxm_tmk.core.dependency import Package, PinnedPackage
 from sxm_tmk.core.env_manager.pipenv.lock import LockFile
-from sxm_tmk.core.types import InstallMode
 
 
 def test_lockfile_from_dir_can_resolve_pipfile_lock(a_path_containing_a_pipfile_lock):
@@ -16,7 +16,7 @@ def test_lockfile_from_path_resolve_pipfile_lock(a_path_to_pipfile_lock):
 
 
 def test_lockfile_with_invalid_path(tmp_path):
-    with pytest.raises(FileNotFoundError, match=f"Cannot find pipfile in '{tmp_path.as_posix()}/Pipfile.lock'."):
+    with pytest.raises(TMKLockFileNotFound, match=f"Cannot find pipfile in '{tmp_path.as_posix()}/Pipfile.lock'."):
         LockFile(tmp_path)
 
 

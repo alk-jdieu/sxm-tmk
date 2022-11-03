@@ -5,8 +5,13 @@ from typing import Callable, Dict, List
 
 import ujson as json
 
+from sxm_tmk.core.custom_types import (
+    DictOfPackages,
+    InstallMode,
+    PinnedPackages,
+    TMKLockFileNotFound,
+)
 from sxm_tmk.core.dependency import Package, PinnedPackage, clean_version
-from sxm_tmk.core.types import DictOfPackages, InstallMode, PinnedPackages
 
 
 class LockFile:
@@ -20,7 +25,7 @@ class LockFile:
         if lock_file_path.name != "Pipfile.lock":
             lock_file_path = lock_file_path / "Pipfile.lock"
         if not lock_file_path.exists():
-            raise FileNotFoundError(f"Cannot find pipfile in '{lock_file_path.as_posix()}'.")
+            raise TMKLockFileNotFound(f"Cannot find pipfile in '{lock_file_path.as_posix()}'.")
 
         self.__data = json.loads(lock_file_path.read_text())
         self.__mode: InstallMode = InstallMode.DEV
