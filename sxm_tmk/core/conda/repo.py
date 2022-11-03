@@ -48,6 +48,7 @@ class QueryPlan:
         method = MambaSearch()
         method.use_index = False
         self._aggregate_results(*search(method, packages[0].name, self.__cache, progress_track))
+        method.use_index = True
         with ThreadPoolExecutor(max_workers=10) as tp:
             method.use_index = True
             for package in packages[1:]:
