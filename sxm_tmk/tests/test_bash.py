@@ -1,3 +1,5 @@
+import pathlib
+
 from sxm_tmk.core.bash import BashScript
 
 
@@ -70,3 +72,16 @@ def test_reset_only_reset_state(bash_script_cleaner):
     assert sh.stdout == ["Falsy", ""]
     assert sh.stderr == ["+ set -xe", "+ echo Falsy", "+ false", ""]
     assert sh.has_completed
+
+
+def test_script_unlinks_correctly(tmp_path):
+    sh = BashScript(
+        ['echo "Hello"'],
+        name="test.sh",
+        exit_on_error=True,
+        echo_statement=True,
+    )
+    assert sh.run() == 0
+    sh.unlink()
+    path = pathlib.Path(tmp_path) / "test.sh"
+    assert not path.exists()

@@ -61,6 +61,8 @@ class EnvironmentMaker:
         )
         with status, execution_dir:
             succeeded = script.run() == 0
+        if not self.__keep_files:
+            script.unlink()
         Terminal().step(step_info.step_msg, succeeded)
         return script, succeeded
 

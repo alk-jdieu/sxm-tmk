@@ -84,6 +84,11 @@ class BashScript:
             )
         return self.__exec_info.returncode
 
+    def unlink(self):
+        p = pathlib.Path(getcwd()) / self.__script_name
+        if p.exists():
+            p.unlink()
+
     def reset(self):
         self.__timed_out = None
         self.__exec_info = None
