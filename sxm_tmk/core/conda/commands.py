@@ -12,7 +12,8 @@ class Executable:
         return self.__executable
 
     def run_in_executor(self, *args) -> str:
-        return subprocess.check_output([self.name, *args], stderr=subprocess.DEVNULL).decode("utf8")
+        command = list(filter(lambda x: x, [self.name, *args]))
+        return subprocess.check_output(command, stderr=subprocess.DEVNULL).decode("utf8")
 
 
 class Conda(Executable):
@@ -58,7 +59,7 @@ class CondaSearch(Conda):
         return None
 
 
-class MambaSearch(Conda):
+class MambaSearch(Mamba):
     def __init__(self, channels: Optional[List[str]] = None, use_index: bool = False):
         super().__init__()
         self.use_index = use_index
