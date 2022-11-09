@@ -1,5 +1,6 @@
 {% set name = "sxm-tmk" %}
-{% set version = "1.1.0" %}
+{% set version = "1.1.1" %}
+{% set shasum = "fac5aeb2d761773e9cd950fdc59b5ae1cd99875cda24250b8ac1ca31784d2b42" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +8,7 @@ package:
 
 source:
   url: ../dist/{{ name }}-{{ version }}.tar.gz
-  sha256: fe62386bd28c9017a2bbb02790dd14b31e001be5de7790032904897fea25977e
+  sha256: {{ shasum }}
 
 build:
   number: 0
