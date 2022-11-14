@@ -10,6 +10,7 @@ from sxm_tmk.cli.create import setup as setup_create
 def main(args=None):
     parser = ArgumentParser("sxm-tmk", description="Tool for managing environment using conda")
     parser.add_argument("--version", action="version", version=f"%(prog)s, version {version}")
+    parser.set_defaults(func=lambda _: parser.print_help())
     parsers = parser.add_subparsers()
     setup_convert(parsers)
     setup_clean(parsers)
