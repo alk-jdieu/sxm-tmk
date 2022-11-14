@@ -1,14 +1,16 @@
 # Supplier XM - Environment management
 
 `sxm-tmk` is a tool that facilitates environment management across platforms by leveraging conda in order to:
- * avoid recompiling your dependencies
- * manage cross platform environment
- * capture non-python dependencies to achieve reproductibility
+
+- avoid recompiling your dependencies
+- manage cross platform environment
+- capture non-python dependencies to achieve reproductibility
 
 # Features
 
 Allow you to:
-* create an environment from pipenv to conda
+
+- create an environment from pipenv to conda
 
 # Usage
 
