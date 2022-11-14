@@ -4,9 +4,7 @@ version = "1.1.1"
 description = "One tool to rule your envs, one tool to find your requirements and in the brightness bind them all."
 authors = ["Jean-Sébastien Dieu <jdieu@salsify.com>"]
 
-packages = [
-    { include = "sxm_tmk" }
-]
+packages = [{ include = "sxm_tmk" }]
 
 exclude = ["sxm_tmk/tests"]
 
