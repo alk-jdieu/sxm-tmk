@@ -16,7 +16,7 @@ Allow you to:
 
 Say you have an environment managed with `pipenv` or `poetry`. To convert it to conda:
 
-`sxm-tmk convert /Users/js-dieu/Projects/service-test`
+`tmk convert /Users/js-dieu/Projects/service-test`
 
 The system will automatically discover if you are using `pipenv` or `poetry` and then fetch your environment specification
 in order to convert it to conda.
