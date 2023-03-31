@@ -1,6 +1,6 @@
 {% set name = "sxm-tmk" %}
-{% set version = "1.1.1" %}
-{% set shasum = "fac5aeb2d761773e9cd950fdc59b5ae1cd99875cda24250b8ac1ca31784d2b42" %}
+{% set version = "1.1.2" %}
+{% set shasum = "adeb18da64603f84eab63b74cd4e322c9e367b7853460ef5a43cf6bd0fd0ba69" %}
 
 package:
   name: {{ name|lower }}

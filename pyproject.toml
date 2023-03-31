@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sxm-tmk"
-version = "1.1.1"
+version = "1.1.2"
 description = "One tool to rule your envs, one tool to find your requirements and in the brightness bind them all."
 authors = ["Jean-Sébastien Dieu <jdieu@salsify.com>"]
 
