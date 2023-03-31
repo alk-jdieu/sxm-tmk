@@ -1,4 +1,6 @@
 import contextlib
+import json
+import pathlib
 import subprocess
 from typing import List, Optional
 
@@ -76,3 +78,51 @@ class MambaSearch(Mamba):
                 pkg,
             )
         return None
+
+
+class MambaEnv(Mamba):
+    def __init__(self):
+        super().__init__()
+
+    def fetch(self, only_envs: bool = True) -> List[str]:
+        with contextlib.suppress(subprocess.CalledProcessError):
+            data = self.run_in_executor(
+                "env",
+                "list",
+                "--json",
+            )
+            try:
+                j = json.loads(data)
+                if only_envs:
+                    j = j.get("envs", [])
+                return j
+            except json.JSONDecodeError:
+                return []
+        return []
+
+    def exists(self, env_name: str) -> bool:
+        return all([pathlib.Path(p).name != env_name for p in self.fetch(only_envs=True)])
+
+
+class CondaEnv(Conda):
+    def __init__(self):
+        super().__init__()
+
+    def fetch(self, only_envs: bool = True) -> List[str]:
+        with contextlib.suppress(subprocess.CalledProcessError):
+            data = self.run_in_executor(
+                "env",
+                "list",
+                "--json",
+            )
+            try:
+                j = json.loads(data)
+                if only_envs:
+                    j = j.get("envs", [])
+                return j
+            except json.JSONDecodeError:
+                return []
+        return []
+
+    def exists(self, env_name: str) -> bool:
+        return all([pathlib.Path(p).name != env_name for p in self.fetch(only_envs=True)])
